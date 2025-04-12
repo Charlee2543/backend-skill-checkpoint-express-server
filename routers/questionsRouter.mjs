@@ -4,6 +4,7 @@ import {
    checkCreateQuestion,
    checkId,
    checkInsertKey,
+   CheckSearchQuery,
 } from '../middlewares/questionVaridate.mjs';
 const questionsRouter = Router();
 
@@ -41,23 +42,39 @@ questionsRouter.get(`/`, async (req, res) => {
       res.status(500).json({ message: 'Unable to fetch questions.' });
    }
 });
-questionsRouter.get('/search', async (req, res) => {
+questionsRouter.get('/search', [CheckSearchQuery], async (req, res) => {
    /* Search questions by title or category
    เช็ตว่า params เป็น title,category
    ถ้าค้นหา parems ไม่เจอ  ให้ status 400 หาไม่กำหนด 
    หากมี param2 ให้หา2 หากมีparam1 ให้หา1 หากไม่มี ให้status 400
    */
-   const paramTitle = req.params.title;
-   console.log('paramTitle: ', paramTitle);
-   const paramCategory = req.params.category;
-   console.log('paramCategory: ', paramCategory);
-   console.log('req.params: ', req.params);
-   return res.status(200).json({ message: 'Question get has successfully.' });
-   // try {
-   // } catch (error) {
-   //    console.log('error: ', error);
-   //    return res.status(500).json({ message: 'Unable to fetch questions.' });
-   // }
+   const queryTitle = req.query.title;
+   const queryCategory = req.query.category;
+   try {
+      let result;
+      if (queryTitle && queryCategory) {
+         result = await connectionPool.query(
+            `select * from questions where title like $1 and category like $2`,
+            [`%${queryTitle}%`, `%${queryCategory}%`]
+         );
+      } else if (queryCategory) {
+         result = await connectionPool.query(
+            `select * from questions where title like $1 OR category like $2 `,
+            ['null', `%${queryCategory}%`]
+         );
+         // console.log('result: ', result);
+      } else if (queryTitle) {
+         result = await connectionPool.query(
+            `select * from questions where title like $1 OR category like $2 `,
+            [`%${queryTitle}%`, 'null']
+         );
+      }
+      // console.log('result: ', result);
+      return res.status(200).json({ data: result.rows });
+   } catch (error) {
+      console.log('error: ', error);
+      return res.status(500).json({ message: 'Unable to fetch questions.' });
+   }
 });
 questionsRouter.get(`/:questionId`, [checkId], async (req, res) => {
    /* Get all questions

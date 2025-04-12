@@ -32,7 +32,11 @@ export const checkCreateQuestion = (req, res, next) => {
 export const checkInsertKey = async (req, res, next) => {
    const userkey = Object.keys(req.body);
    // console.log('userkey : ', userkey);
-
+   /* 
+SELECT COLUMN_NAME หาชื่อ colum
+      FROM information_schema.columns คำสั่งให้หาชื่อ colum ทั้งหมด
+      WHERE table_name = 'questions' โดยให้ดู table ไหน =questions
+*/
    const result = await connectionPool.query(`
       SELECT COLUMN_NAME
       FROM information_schema.columns
@@ -51,4 +55,19 @@ export const checkInsertKey = async (req, res, next) => {
    }
    next();
 };
-// export const CheckSearchParem = (req, res, next) => {};
+export const CheckSearchQuery = (req, res, next) => {
+   // เอา key ออกจาก object
+   // กำหนดkey คือ title category
+   // เช็คkey ว่าเหมื่อนไหม โดย fillter หา key ที่ไม่ใช่
+   const querykey = Object.keys(req.query);
+   // console.log('querykey: ', !!querykey);
+   // console.log('querykey: ', querykey.length);
+   const searchKey = ['title', 'category'];
+   const invalidKey = querykey.filter((key) => {
+      return !searchKey.includes(key);
+   });
+   if (invalidKey.length > 0 || querykey.length === 0) {
+      return res.status(400).json({ message: 'Invalid search parameters.' });
+   }
+   next();
+};
