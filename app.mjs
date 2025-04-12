@@ -1,5 +1,6 @@
 import express from 'express';
 import questionsRouter from './routers/questionsRouter.mjs';
+import answersRouter from './routers/answersRouter.mjs';
 
 const app = express();
 const port = 4000;
@@ -11,7 +12,7 @@ app.get('/test', (req, res) => {
 });
 
 app.use(`/questions`, questionsRouter);
-app.use(`/answers`, questionsRouter);
+app.use(`/answers`, answersRouter);
 
 app.listen(port, () => {
    console.log(`Server is running at ${port}`);

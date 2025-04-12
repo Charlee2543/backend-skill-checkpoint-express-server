@@ -4,8 +4,10 @@ import {
    checkCreateQuestion,
    checkId,
    checkInsertKey,
-   CheckSearchQuery,
+   checkSearchQuery,
 } from '../middlewares/questionVaridate.mjs';
+import { checkValueContent } from '../middlewares/answerVaridate.mjs';
+import { checkVote } from '../middlewares/voteVaridate.mjs';
 const questionsRouter = Router();
 
 questionsRouter.post(`/`, [checkCreateQuestion], async (req, res) => {
@@ -42,7 +44,7 @@ questionsRouter.get(`/`, async (req, res) => {
       res.status(500).json({ message: 'Unable to fetch questions.' });
    }
 });
-questionsRouter.get('/search', [CheckSearchQuery], async (req, res) => {
+questionsRouter.get('/search', [checkSearchQuery], async (req, res) => {
    /* Search questions by title or category
    เช็ตว่า params เป็น title,category
    ถ้าค้นหา parems ไม่เจอ  ให้ status 400 หาไม่กำหนด 
@@ -140,11 +142,93 @@ questionsRouter.delete(`/:questionId`, [checkId], async (req, res) => {
    }
 });
 
-questionsRouter.post(`/:questionId/answers`, async (req, res) => {});
-questionsRouter.get(`/:questionId/answers`, async (req, res) => {
-   return res.status(200).json({ message: 'Question get has successfully.' });
+questionsRouter.post(
+   `/:questionId/answers`,
+   [checkId, checkValueContent],
+   async (req, res) => {
+      const id = req.params.questionId;
+      const body = req.body.content;
+      // Create an answer for a question
+      // เช็ค id
+      // try catch
+      // เช็คว่าได้ใส่ answer ไหม
+      // inser into answers
+      // success 200
+      try {
+         await connectionPool.query(
+            `insert into answers (question_id,content) values($1,$2)`,
+            [id, body]
+         );
+         return res
+            .status(200)
+            .json({ message: 'Answer created successfully.' });
+      } catch (error) {
+         console.log('error: ', error);
+         return res
+            .status(500)
+            .json({ message: 'Unable to delete questions.' });
+      }
+   }
+);
+questionsRouter.get(`/:questionId/answers`, [checkId], async (req, res) => {
+   const id = req.params.questionId;
+
+   try {
+      const result = await connectionPool.query(
+         `
+         select questions.id,answers.content from answers 
+         inner join questions on questions.id=answers.question_id
+         where questions.id=$1
+         `,
+         [id]
+      );
+      return res.status(200).json({ data: result.rows });
+   } catch (error) {
+      console.log('error: ', error);
+      return res.status(500).json({ message: 'Unable to delete questions.' });
+   }
 });
-questionsRouter.delete(`/:questionId/answers`, async (req, res) => {});
-questionsRouter.delete(`/:questionId/vote`, async (req, res) => {});
+questionsRouter.delete(`/:questionId/answers`, [checkId], async (req, res) => {
+   const userId = req.params.questionId;
+   try {
+      await connectionPool.query(
+         `DELETE FROM answers 
+         where question_id = $1`,
+         [userId]
+      );
+      return res.status(200).json({
+         message:
+            'All answers for the question have been deleted successfully.',
+      });
+   } catch (error) {
+      console.log('error: ', error);
+      return res.status(500).json({ message: 'Unable to delete answers.' });
+   }
+});
+questionsRouter.post(
+   `/:questionId/vote`,
+   [checkId, checkVote],
+   async (req, res) => {
+      // check id
+      // varidate vote 1 or -1
+      // udate vote
+      const userId = req.params.questionId;
+      const vote = req.body.vote;
+      try {
+         await connectionPool.query(
+            `UPDATE question_votes
+         SET vote = $2
+         WHERE question_id = $1`,
+            [userId, vote]
+         );
+         return res.status(200).json({
+            message: 'Vote on the question has been recorded successfully.',
+         });
+      } catch (error) {
+         console.log('error: ', error);
+         return res.status(500).json({ message: 'Unable to vote question.' });
+      }
+   }
+);
 
 export default questionsRouter;

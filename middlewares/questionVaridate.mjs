@@ -7,7 +7,7 @@ export const checkId = async (req, res, next) => {
    if (isNaN(parseInt(id))) {
       return res.status(400).json({ message: 'Invalid question ID' });
    }
-   console.log('id: ', id);
+   // console.log('id: ', id);
    const result = await connectionPool.query(
       `select id from questions where id = $1`,
       [id]
@@ -55,7 +55,7 @@ SELECT COLUMN_NAME หาชื่อ colum
    }
    next();
 };
-export const CheckSearchQuery = (req, res, next) => {
+export const checkSearchQuery = (req, res, next) => {
    // เอา key ออกจาก object
    // กำหนดkey คือ title category
    // เช็คkey ว่าเหมื่อนไหม โดย fillter หา key ที่ไม่ใช่
