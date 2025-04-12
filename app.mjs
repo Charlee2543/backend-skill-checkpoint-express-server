@@ -11,6 +11,7 @@ app.get('/test', (req, res) => {
 });
 
 app.use(`/questions`, questionsRouter);
+app.use(`/answers`, questionsRouter);
 
 app.listen(port, () => {
    console.log(`Server is running at ${port}`);
